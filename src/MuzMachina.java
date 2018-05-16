@@ -1,14 +1,14 @@
-import com.sun.deploy.panel.JavaPanel;
 
 import javax.sound.midi.*;
 import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.io.*;
 import java.util.ArrayList;
 
 //this program has been rewritten from the book "Java Rusz Glowa"
-public class MuzMachina implements MetaEventListener {
+public class MuzMachina implements MetaEventListener, Serializable {
 
     JPanel panelGlowny;
     ArrayList<JCheckBox> listaPolWyboru;
@@ -53,6 +53,14 @@ public class MuzMachina implements MetaEventListener {
         JButton tempoD = new JButton("Wolniej");
         tempoD.addActionListener(new MojTempoDListener());
         obszarPrzyciskow.add(tempoD);
+
+        JButton zapisz = new JButton("Zapisz");
+        tempoD.addActionListener(new ZapiszListener());
+        obszarPrzyciskow.add(zapisz);
+
+        JButton odtworz = new JButton("Odtworz");
+        tempoD.addActionListener(new OdtworzListener());
+        obszarPrzyciskow.add(odtworz);
 
         Box obszarNazw = new Box(BoxLayout.Y_AXIS);
         for (int i = 0; i < 16; i++) {
@@ -184,6 +192,57 @@ public class MuzMachina implements MetaEventListener {
             e.printStackTrace();
         }
         return zdarzenie;
+    }
+
+    public class ZapiszListener implements ActionListener{
+
+        @Override
+        public void actionPerformed(ActionEvent e) {
+            boolean[] stanyPol = new boolean[256];
+
+            for (int i = 0; i < 256; i++) {
+                JCheckBox pole = (JCheckBox) listaPolWyboru.get(i);
+                if(pole.isSelected()){
+                    stanyPol[i] = true;
+                }
+            }
+            try{
+                FileOutputStream strumienPlk = new FileOutputStream(new File("kompozycja.ser"));
+                ObjectOutputStream os = new ObjectOutputStream(strumienPlk);
+                os.writeObject(stanyPol);
+                os.close();
+            } catch(Exception ex){
+                ex.printStackTrace();
+            }
+        }
+    }
+
+    public class OdtworzListener implements ActionListener{
+        @Override
+        public void actionPerformed(ActionEvent e) {
+
+            boolean[] stanyPol = null;
+            try{
+                FileInputStream plikDanych = new FileInputStream(new File("kompozycja.ser"));
+                ObjectInputStream is = new ObjectInputStream(plikDanych);
+                stanyPol = (boolean[]) is.readObject();
+                is.close();
+            } catch (Exception ex){
+                ex.printStackTrace();
+            }
+
+            for (int i = 0; i < 256; i++) {
+                JCheckBox pole = (JCheckBox) listaPolWyboru.get(i);
+                if (stanyPol[i]){
+                    pole.setSelected(true);
+                } else {
+                    pole.setSelected(false);
+                }
+            }
+
+            sekwenser.stop();
+            utworzSciezkeIOdtworz();
+        }
     }
 
 }
